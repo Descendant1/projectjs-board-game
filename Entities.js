@@ -10,7 +10,8 @@ class Actor {
         this._attackSquares  =   attackSquares; 
         this._speed          =   speed;
         this._available      =   true;
-        this._idDead         =   false;        
+        this._isDead         =   false;    
+        this._textHolder     =   this.createSpan();    
     }
     
     attack(target)
@@ -23,7 +24,22 @@ class Actor {
         console.log(target)
         
     }
-    
+    createSpan()
+    {
+        var span = document.createElement('span');
+        span.id =  this._id;
+        span.innerText =  this._type;
+        span.style.display = 'block';
+        span.style.backgroundColor = 'aquamarine';
+        span.style.padding = '5px';
+        span.style.textAlign = 'center';
+        span.style.border='1px solid black';
+        span.onclick = () => {
+            alert(`was selected ${this._type + '' + this._id}`)
+            game._selectedActor =  this;
+        }
+        return span;
+    }
 }
 
 class Elf extends Actor
@@ -60,21 +76,22 @@ class Player
                                 new Dwarf(plNum+3),   new Dwarf(plNum+4),
                                 new Knight(plNum+5),  new Knight(plNum+6)
                             ];  
-        this._currentPoints = 0;
+        this._currentPoints = getRandomNext(100,200);
 
-        this._pointsTextHolder =  document.getElementById('p1Points');
+        this._pointsTextHolder =  document.getElementById('pPoints');
+        this._availActorsTextHolder =  document.getElementById('pActors');
     }
-    getActors()
+    getActors(func)
     {
-        return this._gameActors;//.filter();
+        return this._gameActors.filter(func);
     }
     updatePoints( number )
     {
         if(typeof number === 'string')
             return;
         this._currentPoints += number;
-        this._pointsTextHolder.innerText =  `Player 1 current points = ${this._currentPoints}`;
     }
+    
 
 }
 
@@ -84,14 +101,32 @@ class Game
     {
         this._firstPlayer   =  new Player(1,'Player1')
         this._secondPlayer  =  new Player(2,'Player2')
-        this._currentPlayer = null;
+        this._currentPlayer = this._firstPlayer;
         this._selectedActor     = null;
         this._board =  new Board('canvas','2d');
 
     }
     getFirstPlayer () { return this._firstPlayer }
     getSecondPlayer() { return this._secondPlayer }
+    getCurrentPlayer()
+    {
+        return this._currentPlayer;
+    }
+
+    render()
+    {
+        setInterval(()=>{
+            
+            this.getCurrentPlayer()._pointsTextHolder.innerText       =  `${this.getCurrentPlayer()._playerName} current points = ${this.getCurrentPlayer()._currentPoints}`;
+        //  this.getCurrentPlayer().getActors(i=>!i._isDead).map(i=> this.getCurrentPlayer()._availActorsTextHolder.appendChild(i._textHolder)) ;
+            
+        },500)
+        this.getCurrentPlayer().getActors(i=>!i._isDead).map(i=> this.getCurrentPlayer()._availActorsTextHolder.appendChild(i._textHolder)) ;
+
+    }
 }
+
+
 
 class Board 
 {
@@ -117,6 +152,7 @@ class Board
     {
 
     }
+    
 }
 
 
@@ -126,6 +162,7 @@ class Cell
     {
         this._id = 1 + this._x * 1 + this._y
         this._status = '';
+        this._positionInheritence =  '';
         this._currentActor  = null;
         this._x = x;
         this._y = y;
@@ -133,3 +170,7 @@ class Cell
     }
 }
 
+const game =  new Game();
+game.render();
+var p1 = game.getFirstPlayer();
+var p2 =  game.getSecondPlayer();
