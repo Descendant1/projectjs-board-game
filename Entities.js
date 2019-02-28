@@ -45,7 +45,12 @@ class Actor {
         }
         game.getCurrentPlayer().updatePoints( points );
     }
-    
+    heal()
+    {
+        var temp = getRandomNext(1,6)
+        this._health +=  getRandomNext(1,6);
+        temp % 2 ? this._health += getRandomNext(1,6) : alert('healed');
+    }
     createSpan()
     {
         var span = document.createElement('span');
@@ -76,6 +81,7 @@ class Elf extends Actor
         super(id,'Elf',5,1,10,1,1);
     }
 }
+
 class Dwarf  extends Actor
 {
     constructor(id)
@@ -83,6 +89,7 @@ class Dwarf  extends Actor
         super(id,'Dwarf',6,2,12,2,2);
     }
 }
+
 class Knight extends Actor
 {
     constructor(id)
@@ -170,8 +177,6 @@ class Game
         { this._currentPlayer =  this._firstPlayer }
     }
 }
-
-
 
 class Board 
 {
@@ -329,20 +334,4 @@ class Cell
         }
     }
 
-}
-var game = null;
-var refreshIntervalId = null;
-Game.prototype.startGame = () => {
-    if(game) {return};
-    game =  new Game();
-    game.render();
-}
-
-Game.prototype.restartGame = () => {
-    clearInterval(refreshIntervalId);
-    game =  new Game();
-    game.render();
-}
-Game.prototype.getCurrentGame = () => {
-    return game;
 }
