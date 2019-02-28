@@ -7,17 +7,25 @@
     <title>Document</title>
 </head>
 <body>
-    <br> <span id ="pScores">  </span> <br>
+    <br> <h1 id ="pScores">  </h1> <br>
     
     <canvas id = "canvas"></canvas>
 
     
 
     <div id="pActors" style="float: right;top:0; position: fixed; right: 1%;">
+        <h2 id="CurrentPlayer">  </h2>
         <p id ="pPoints"></p>
-        <p> Current player live actors </p>
+        <p> Current player live actors <br> Click to select an Actor</p>
 
     </div>
+    <h2 id="CurrentActor">  </h2>
+    <button onclick="game._currentPlayer = game.getFirstPlayer()">Player1</button>
+    <button onclick="game._currentPlayer = game.getSecondPlayer()">Player2</button>
+    <button onclick="Game.prototype.startGame()">START!!!!</button>
+    <button onclick="Game.prototype.restartGame()">RE-START!!!!</button>
+    
+
 <script src="Utils.js"></script>
 <script src="Entities.js"></script>
 </body>

@@ -45,6 +45,7 @@ class Actor {
         }
         game.getCurrentPlayer().updatePoints( points );
     }
+    
     createSpan()
     {
         var span = document.createElement('span');
@@ -56,7 +57,7 @@ class Actor {
         span.style.textAlign = 'center';
         span.style.border='1px solid black';
         span.onclick = () => {
-            alert(`was selected ${this._type + '' + this._id}`)
+           // alert(`was selected ${this._type + '' + this._id}`)
             game._selectedActor =  this;
         }
         return span;
@@ -98,11 +99,12 @@ class Player
         this._playerName =  plName
         this._gameActors =  
                             [ 
-                                new Elf(plNum+1),     new Elf(plNum+2),
+                                new Elf(plNum+1),    
+                                new Elf(plNum+2),
                                 new Dwarf(plNum+3),   new Dwarf(plNum+4),
                                 new Knight(plNum+5),  new Knight(plNum+6)
                             ];  
-        this._currentPoints = getRandomNext(100,200);
+        this._currentPoints = 100; //getRandomNext(100,200);
 
         this._pointsTextHolder =  document.getElementById('pPoints');
         this._availActorsTextHolder =  document.getElementById('pActors');
@@ -117,7 +119,7 @@ class Player
             return;
         this._currentPoints += number;
     }
-    
+
 
 }
 
@@ -131,7 +133,9 @@ class Game
         this._selectedActor =  null;
         this._board         =  new Board('canvas','2d');
         this._scoresBoard   =  document.getElementById('pScores');
-
+        this._currentActorTextHolder  =  document.getElementById('CurrentActor');
+        this._currentPlayerTextHolder =  document.getElementById('CurrentPlayer');
+        this._gameStarted   =  false;
     }
     getFirstPlayer () { return this._firstPlayer }
     getSecondPlayer() { return this._secondPlayer }
@@ -142,15 +146,28 @@ class Game
 
     render()
     {
-        setInterval(()=>{
+        refreshIntervalId = setInterval(()=>{
             
             this.getCurrentPlayer()._pointsTextHolder.innerText       =  `${this.getCurrentPlayer()._playerName} current points = ${this.getCurrentPlayer()._currentPoints}`;
             Array.from(document.querySelectorAll('div#pActors span')).map(i=>i.remove())
             this.getCurrentPlayer().getActors(i=>!i._isDead && i._available ).map(i=> this.getCurrentPlayer()._availActorsTextHolder.appendChild(i.getTextHolder())) ;
             this._scoresBoard.innerHTML = `${this.getFirstPlayer()._playerName} score is ${this.getFirstPlayer()._currentPoints } &nbsp; ${this.getSecondPlayer()._playerName} score is ${this.getSecondPlayer()._currentPoints }`;
-            
-        },500)
-
+            this._currentActorTextHolder.innerText = this._selectedActor? 'Current actor: '+ this._selectedActor._type : ''; 
+            this._currentPlayerTextHolder.innerText =  `${this._currentPlayer._playerName} turn`;
+            this._board.reInit();
+        },300)
+    }
+    cleareCanvas()
+    {
+        this._board._context.clearRect(0,0, this._board._canvas.width,this._board._canvas.height);
+        this._board._cells = [];
+    }
+    switchActor()
+    {
+        if(this._currentPlayer === this._firstPlayer)
+        { this._currentPlayer =  this._secondPlayer }
+        else
+        { this._currentPlayer =  this._firstPlayer }
     }
 }
 
@@ -170,39 +187,60 @@ class Board
             this._canvas.height     = this._boardHeight;
             this._canvas.onclick    = (e) => 
                                             {
-                                                var rect = this.collides( e.offsetX, e.offsetY);                                                
-                                                if(game._selectedActor != null && !rect._currentActor )
-                                                {
-                                                    if(rect._positionInheritance === 'battleField')  { return; }
-
-                                                    if (rect) 
+                                                var rect = this.collides( e.offsetX, e.offsetY);              
+                                                if(!game._gameStarted)                                      
+                                                { 
+                                                    if(game._selectedActor != null && rect._currentActor == null )
                                                     {
-                                                        rect._currentActor  =  game._selectedActor;
-                                                        game._selectedActor._available =  false;
-                                                        game._selectedActor = null;
-                                                        console.log(rect);
-                                                    } 
-                                                    else { return; }
+                                                        console.log('ji')
+                                                        if( rect._positionInheritance === 'battleField' )  { return; }
+                                                        if( rect._positionInheritance !=  game.getCurrentPlayer()._playerName ) { return; }
+                                                        if( rect) 
+                                                        {
+                                                            rect._currentActor  =  game._selectedActor;
+                                                            game._selectedActor._available =  false;
+                                                            game._selectedActor = null;
+                                                            game.switchActor();
+                                                            if ( game.getFirstPlayer()._gameActors.filter(i=>i._available == true).length == 0 &&
+                                                                game.getSecondPlayer()._gameActors.filter(i=>i._available== true).length == 0 )
+                                                            {
+                                                                alert('GameStarted');
+                                                                game._gameStarted =  true;
+                                                            }
+                                                        } 
+                                                        else { return; }
+                                                    }  
                                                 }
-                                                else {  console.log('Клетка занята или не выбран хуйкин') }
-                                            }    
+                                                else{
+                                                    game._selectedActor =  rect._positionInheritance == game.getCurrentPlayer()._playerName ? rect._currentActor : alert('it is not yours');
+                                                    console.log(game._selectedActor);
+
+                                                }
+                                            }        
         this._context           = this._canvas.getContext(dimension);
         this._cells             = [];
-        this.init();
-    }
-    init()
-    {
         this.initializeBoard()
+    }
+    reInit()
+    {
+        let i, x, y = -1;
+        for (i = 0; i <  this._totalBoardCells; i++) {
+          x++;
+          if (i % this._boardWidthSize == 0) {
+            y++; 
+            x = 0;
+          }     
+          let tempCell =  this._cells[i];
+          tempCell.drawRectangleCell(this._context,x,y) ;
+        } 
     }
     initializeBoard () 
     {
         let squareWidth = this._boardWidth / this._boardWidthSize;
-        let squareHeight = this._boardHeight / this._boardHeightSize;
-        let totalSquares = this._totalBoardCells;
         let i, x, y = -1;
         let battleField = null;
                 
-        for (i = 0; i < totalSquares; i++) {
+        for (i = 0; i <  this._totalBoardCells; i++) {
           x++;
           if (i % this._boardWidthSize == 0) {
             y++; 
@@ -211,7 +249,11 @@ class Board
           }     
           if(y>=2 && y <=4)
             battleField =  'battleField';
-          let tempCell =  new Cell(x * squareWidth, y * squareWidth, squareWidth, squareHeight, battleField);
+          else if( y >= 0 && y <=1 )
+            battleField = 'Player1';
+          else if (y >= 5 && y<=6)
+            battleField = 'Player2';
+          let tempCell =  new Cell(x * squareWidth, y * squareWidth, squareWidth, this._boardHeight / this._boardHeightSize, battleField);
           battleField = null;
           this.push(tempCell) ? tempCell.drawRectangleCell(this._context,x,y) : alert('error');
         }
@@ -263,15 +305,44 @@ class Cell
     drawRectangleCell(ctx,x,y){
         ctx.beginPath();
         ctx.rect(this._x, this._y, this._width, this._height);
-        if(this._positionInheritance != null ){
+        ctx.font="20px Georgia";
+        if(this._positionInheritance === 'battleField' )
+        {
             ctx.fillStyle = (x + y) % 2 ?  '#0015ff':'#ff0000';
         }
-        else {ctx.fillStyle = (x + y) % 2 ? this.options.dark : this.options.light; }
+        else
+        {
+
+            ctx.fillStyle = (x + y) % 2 ? this.options.dark : this.options.light; 
+        }
         ctx.fill();
+        console.log()
+        ctx.lineWidth =  0.1;
+        ctx.stroke();
+        if(this._currentActor)
+        {
+            ctx.fillStyle = '#ff0000';
+            ctx.font = '22px Courier';
+            ctx.fillText( this._currentActor._type, this._x + 5 , this._y +(this._height/2)  )
+            
+            ctx.lineWidth = 7;
+        }
     }
 
 }
+var game = null;
+var refreshIntervalId = null;
+Game.prototype.startGame = () => {
+    if(game) {return};
+    game =  new Game();
+    game.render();
+}
 
-const game =  new Game();
-game.render();
-
+Game.prototype.restartGame = () => {
+    clearInterval(refreshIntervalId);
+    game =  new Game();
+    game.render();
+}
+Game.prototype.getCurrentGame = () => {
+    return game;
+}
